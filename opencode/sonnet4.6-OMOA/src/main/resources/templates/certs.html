@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>CertWatcher</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: sans-serif; margin: 0; background: #f0f2f5; color: #333; }
+        header { background: #1e293b; color: #fff; padding: .75rem 1.5rem; display:flex; justify-content:space-between; align-items:center; }
+        header h1 { margin:0; font-size:1.25rem; }
+        header span { font-size:.875rem; opacity:.8; }
+        main { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; }
+        .flash-ok { background:#dcfce7; border:1px solid #86efac; padding:.6rem 1rem; border-radius:4px; margin-bottom:1rem; color:#166534; }
+        .flash-err { background:#fee2e2; border:1px solid #fca5a5; padding:.6rem 1rem; border-radius:4px; margin-bottom:1rem; color:#991b1b; }
+        h2 { font-size:1.1rem; margin:1.5rem 0 .75rem; }
+        table { width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.1); }
+        th { background:#1e293b; color:#fff; padding:.6rem .75rem; text-align:left; font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; }
+        td { padding:.6rem .75rem; border-bottom:1px solid #e5e7eb; font-size:.875rem; vertical-align:middle; }
+        tr:last-child td { border-bottom:none; }
+        .badge { display:inline-block; padding:.2rem .55rem; border-radius:999px; font-size:.75rem; font-weight:600; }
+        .badge-ok { background:#dcfce7; color:#166534; }
+        .badge-warn { background:#fef9c3; color:#854d0e; }
+        .badge-danger { background:#fee2e2; color:#991b1b; }
+        .panel { background:#fff; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,.1); padding:1rem 1.25rem; margin-bottom:1.5rem; }
+        .panel-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+        fieldset { border:1px solid #e5e7eb; border-radius:6px; padding:.75rem 1rem; }
+        legend { font-weight:600; font-size:.875rem; padding:0 .25rem; }
+        label { display:block; font-size:.8rem; color:#555; margin-top:.6rem; }
+        input[type=text], input[type=number], input[type=url] { width:100%; padding:.4rem .6rem; border:1px solid #d1d5db; border-radius:4px; margin-top:.2rem; }
+        input[type=file] { margin-top:.2rem; }
+        .btn { display:inline-block; padding:.4rem .9rem; border:none; border-radius:4px; cursor:pointer; font-size:.875rem; }
+        .btn-primary { background:#2563eb; color:#fff; }
+        .btn-primary:hover { background:#1d4ed8; }
+        .btn-sm { padding:.3rem .65rem; font-size:.75rem; }
+        .settings-row { display:flex; gap:.75rem; align-items:flex-end; }
+        .settings-row > div { flex:1; }
+        .logout-btn { background:none; border:none; color:#94a3b8; font-size:.875rem; cursor:pointer; padding:0; }
+        .logout-btn:hover { color:#fff; }
+        .empty { text-align:center; padding:2rem; color:#9ca3af; font-size:.9rem; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>🔒 CertWatcher</h1>
+    <span>
+        Logged in as <strong th:text="${username}"></strong>
+        &nbsp;·&nbsp; Group: <strong th:text="${groupName}"></strong>
+        &nbsp;·&nbsp;
+        <form th:action="@{/logout}" method="post" style="display:inline;">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button type="submit" class="logout-btn">Sign out</button>
+        </form>
+    </span>
+</header>
+
+<main>
+    <div th:if="${success}" class="flash-ok" th:text="${success}"></div>
+    <div th:if="${error}" class="flash-err" th:text="${error}"></div>
+
+    <div th:if="${isAdmin}" class="panel-grid">
+        <div class="panel">
+            <fieldset>
+                <legend>Upload Certificate File (.cer / .pem)</legend>
+                <form th:action="@{/ui/certs/upload}" method="post" enctype="multipart/form-data">
+                    <label>Alias
+                        <input type="text" name="alias" placeholder="my-cert" required/>
+                    </label>
+                    <label>File
+                        <input type="file" name="file" accept=".cer,.pem,.crt" required/>
+                    </label>
+                    <button class="btn btn-primary" style="margin-top:.75rem;" type="submit">Upload</button>
+                </form>
+            </fieldset>
+        </div>
+
+        <div class="panel">
+            <fieldset>
+                <legend>Fetch from URL / Hostname</legend>
+                <form th:action="@{/ui/certs/from-url}" method="post">
+                    <label>Alias
+                        <input type="text" name="alias" placeholder="google-tls" required/>
+                    </label>
+                    <label>Hostname
+                        <input type="text" name="hostname" placeholder="www.google.com" required/>
+                    </label>
+                    <label>Port (default 443)
+                        <input type="number" name="port" value="443" min="1" max="65535"/>
+                    </label>
+                    <button class="btn btn-primary" style="margin-top:.75rem;" type="submit">Fetch</button>
+                </form>
+            </fieldset>
+        </div>
+    </div>
+
+    <div th:if="${isAdmin}" class="panel">
+        <h2 style="margin-top:0;">Alert Settings — group: <span th:text="${groupName}"></span></h2>
+        <form th:action="@{/ui/settings}" method="post">
+            <div class="settings-row">
+                <div>
+                    <label>Alert threshold (days before expiry)
+                        <input type="number" name="alertThresholdDays" th:value="${threshold}" min="1" max="365"/>
+                    </label>
+                </div>
+                <div>
+                    <label>Webhook URL
+                        <input type="url" name="webhookUrl" th:value="${webhookUrl}" placeholder="https://hooks.example.com/alerts"/>
+                    </label>
+                </div>
+                <div>
+                    <button class="btn btn-primary" type="submit">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <h2>Certificates
+        <small style="font-weight:normal;color:#6b7280;">(group: <span th:text="${groupName}"></span> · sorted by expiry ↑)</small>
+    </h2>
+
+    <table th:if="${!certs.isEmpty()}">
+        <thead>
+        <tr>
+            <th>Alias</th>
+            <th>Subject</th>
+            <th>Issuer</th>
+            <th>Expires</th>
+            <th>Status</th>
+            <th>Source</th>
+            <th>Added by</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="cert : ${certs}">
+            <td th:text="${cert.alias}"></td>
+            <td th:text="${cert.subjectDn}" style="font-size:.75rem;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></td>
+            <td th:text="${cert.issuerDn}" style="font-size:.75rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></td>
+            <td th:text="${#temporals.format(cert.notAfter, 'yyyy-MM-dd')}"></td>
+            <td>
+                <span th:if="${cert.daysUntilExpiry > threshold}" class="badge badge-ok"
+                      th:text="${cert.daysUntilExpiry} + 'd'"></span>
+                <span th:if="${cert.daysUntilExpiry <= threshold and cert.daysUntilExpiry > 0}" class="badge badge-warn"
+                      th:text="${cert.daysUntilExpiry} + 'd ⚠'"></span>
+                <span th:if="${cert.daysUntilExpiry <= 0}" class="badge badge-danger">EXPIRED</span>
+            </td>
+            <td th:text="${cert.source}" style="font-size:.75rem;"></td>
+            <td th:text="${cert.addedByUsername}" style="font-size:.75rem;"></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div th:if="${certs.isEmpty()}" class="panel empty">
+        No certificates yet. Add one above (admin only).
+    </div>
+</main>
+</body>
+</html>
