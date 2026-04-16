@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CertAlert - TLS Certificate Monitor</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+    <nav id="navbar">
+        <div class="nav-brand">
+            <span class="logo">&#128274;</span> CertAlert
+        </div>
+        <div class="nav-links" id="nav-links">
+            <a href="#" data-page="certificates" class="nav-link active">Certificates</a>
+            <a href="#" data-page="add" class="nav-link">Add Certificate</a>
+            <a href="#" data-page="thresholds" class="nav-link">Thresholds</a>
+            <a href="#" data-page="alerts" class="nav-link">Alerts</a>
+        </div>
+        <div class="nav-user" id="nav-user" style="display:none;">
+            <span id="user-name"></span>
+            <button id="logout-btn" class="btn btn-sm btn-outline">Logout</button>
+        </div>
+    </nav>
+
+    <main id="app-content">
+        <!-- Login Page -->
+        <section id="page-login" class="page">
+            <div class="login-card">
+                <h1>&#128274; CertAlert</h1>
+                <p class="subtitle">TLS Certificate Expiration Monitor</p>
+                <div class="form-group">
+                    <label for="login-token">JWT Token</label>
+                    <textarea id="login-token" rows="6" placeholder="Paste your JWT token here..."></textarea>
+                </div>
+                <button id="login-btn" class="btn btn-primary btn-block">Sign In</button>
+                <div id="login-error" class="error-msg" style="display:none;"></div>
+                <div class="dev-token-section">
+                    <h4>Development Quick Login</h4>
+                    <button type="button" class="btn btn-sm" onclick="Auth.devLogin('admin')">Admin (ops)</button>
+                    <button type="button" class="btn btn-sm" onclick="Auth.devLogin('ops-user1')">Ops Manager</button>
+                    <button type="button" class="btn btn-sm" onclick="Auth.devLogin('sec-user1')">Sec Manager</button>
+                    <button type="button" class="btn btn-sm" onclick="Auth.devLogin('dev-user1')">Dev Viewer</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Certificates List -->
+        <section id="page-certificates" class="page" style="display:none;">
+            <div class="page-header">
+                <h2>Certificates</h2>
+                <button class="btn btn-primary" onclick="App.navigate('add')">+ Add Certificate</button>
+            </div>
+            <div class="filter-bar">
+                <input type="text" id="cert-search" placeholder="Search certificates..." class="input">
+                <select id="cert-status-filter" class="input">
+                    <option value="">All Status</option>
+                    <option value="VALID">Valid</option>
+                    <option value="WARNING">Warning</option>
+                    <option value="CRITICAL">Critical</option>
+                    <option value="EXPIRED">Expired</option>
+                </select>
+            </div>
+            <div id="certificates-list" class="card-grid">
+                <p class="empty-state">No certificates found. Add one to get started.</p>
+            </div>
+        </section>
+
+        <!-- Add Certificate -->
+        <section id="page-add" class="page" style="display:none;">
+            <div class="page-header">
+                <h2>Add Certificate</h2>
+            </div>
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="upload" onclick="App.switchTab('upload')">File Upload</button>
+                <button class="tab-btn" data-tab="url" onclick="App.switchTab('url')">Fetch from URL</button>
+            </div>
+            <div id="tab-upload" class="tab-content active">
+                <div class="card">
+                    <div class="form-group">
+                        <label>Certificate File (.cer, .crt, .pem)</label>
+                        <input type="file" id="cert-file" accept=".cer,.crt,.pem,.der" class="input">
+                    </div>
+                    <button id="upload-btn" class="btn btn-primary">Upload Certificate</button>
+                </div>
+            </div>
+            <div id="tab-url" class="tab-content" style="display:none;">
+                <div class="card">
+                    <div class="form-group">
+                        <label>Host URL</label>
+                        <input type="url" id="cert-url" placeholder="https://www.google.com" class="input">
+                    </div>
+                    <button id="fetch-btn" class="btn btn-primary">Fetch Certificate</button>
+                </div>
+            </div>
+            <div id="add-result" style="display:none;" class="card result-card"></div>
+        </section>
+
+        <!-- Thresholds -->
+        <section id="page-thresholds" class="page" style="display:none;">
+            <div class="page-header">
+                <h2>Expiration Thresholds</h2>
+            </div>
+            <div class="card">
+                <h4>Add New Threshold</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" id="threshold-name" placeholder="e.g., Warning threshold" class="input">
+                    </div>
+                    <div class="form-group">
+                        <label>Days Before Expiry</label>
+                        <input type="number" id="threshold-days" value="30" class="input">
+                    </div>
+                    <div class="form-group">
+                        <label>Active</label>
+                        <select id="threshold-active" class="input">
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+                    <button id="add-threshold-btn" class="btn btn-primary">Add</button>
+                </div>
+            </div>
+            <div id="thresholds-list" class="card-grid"></div>
+        </section>
+
+        <!-- Alerts -->
+        <section id="page-alerts" class="page" style="display:none;">
+            <div class="page-header">
+                <h2>Alert History</h2>
+                <button id="trigger-check-btn" class="btn btn-outline">Trigger Check Now</button>
+            </div>
+            <div id="alerts-list" class="card-grid">
+                <p class="empty-state">No alerts yet.</p>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast-container"></div>
+    <script src="/js/auth.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
