@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TLS Alert Demo</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<main class="container">
+    <h1>TLS Certificate Alert Demo</h1>
+    <p class="hint">Login first via <a href="/login">/login</a> (alice/alice123, bob/bob123, carol/carol123, dave/dave123).</p>
+
+    <section class="card">
+        <h2>Current User</h2>
+        <button type="button" id="refreshMeBtn">Refresh profile</button>
+        <pre id="meBox">(not loaded)</pre>
+    </section>
+
+    <section class="card">
+        <h2>Threshold</h2>
+        <div class="row">
+            <button type="button" id="loadThresholdBtn">Load threshold</button>
+            <input id="thresholdInput" type="number" min="1" max="3650" placeholder="days">
+            <button type="button" id="saveThresholdBtn">Save threshold</button>
+        </div>
+        <pre id="thresholdBox">(not loaded)</pre>
+    </section>
+
+    <section class="card">
+        <h2>Add certificate from file</h2>
+        <div class="row">
+            <input id="certFileInput" type="file" accept=".cer,.crt,.pem">
+            <button type="button" id="uploadBtn">Upload</button>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Add certificate from URL</h2>
+        <div class="row">
+            <input id="urlInput" type="text" placeholder="www.google.com or https://www.google.com">
+            <button type="button" id="urlBtn">Fetch & Save</button>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Certificates (notAfter DESC)</h2>
+        <button type="button" id="loadCertsBtn">Refresh certificates</button>
+        <pre id="certsBox">(not loaded)</pre>
+    </section>
+
+    <section class="card">
+        <h2>Alerts</h2>
+        <button type="button" id="loadAlertsBtn">Refresh alerts</button>
+        <pre id="alertsBox">(not loaded)</pre>
+    </section>
+
+    <section class="card">
+        <h2>Session</h2>
+        <a href="/logout">Logout</a>
+    </section>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>
