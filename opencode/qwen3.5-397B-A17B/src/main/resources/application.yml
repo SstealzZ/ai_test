@@ -1,0 +1,71 @@
+spring:
+  application:
+    name: cert-manager
+
+  # H2 Database Configuration
+  datasource:
+    url: jdbc:h2:mem:certdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Flyway Configuration
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    clean-disabled: false
+
+# Server Configuration
+server:
+  port: 8080
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: false
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.example.certmanager: DEBUG
+    org.springframework.security: DEBUG
+    org.flywaydb: INFO
+    org.hibernate.SQL: INFO
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+# Certificate Manager Configuration
+certmanager:
+  scheduler:
+    enabled: true
+    expiry:
+      threshold-days: 30
+  email:
+    enabled: false

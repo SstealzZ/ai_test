@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Expired</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background-color: #f44336;
+            color: white;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            margin: -30px -30px 20px -30px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .alert-box {
+            background-color: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .expired-badge {
+            background-color: #f44336;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 18px;
+        }
+        .certificate-details {
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .certificate-details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .certificate-details td {
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .certificate-details td:first-child {
+            font-weight: 600;
+            color: #666;
+            width: 40%;
+        }
+        .action-button {
+            display: inline-block;
+            background-color: #f44336;
+            color: white;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-weight: 600;
+        }
+        .action-button:hover {
+            background-color: #d32f2f;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚨 Certificate Expired</h1>
+        </div>
+
+        <p>Hello,</p>
+
+        <div class="alert-box">
+            <strong>URGENT:</strong> One of your SSL/TLS certificates has EXPIRED. This may cause service disruption and security warnings for your users.
+        </div>
+
+        <div class="expired-badge">
+            EXPIRED - Immediate Action Required
+        </div>
+
+        <div class="certificate-details">
+            <h3>Certificate Details</h3>
+            <table>
+                <tr>
+                    <td>Common Name:</td>
+                    <td th:text="${certificate.commonName}">example.com</td>
+                </tr>
+                <tr>
+                    <td>Issuer:</td>
+                    <td th:text="${certificate.issuer}">Let's Encrypt</td>
+                </tr>
+                <tr>
+                    <td>Subject:</td>
+                    <td th:text="${certificate.subject}">CN=example.com</td>
+                </tr>
+                <tr>
+                    <td>Serial Number:</td>
+                    <td th:text="${certificate.serialNumber}">ABC123</td>
+                </tr>
+                <tr>
+                    <td>Valid From:</td>
+                    <td th:text="${#temporals.format(certificate.notBefore, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01</td>
+                </tr>
+                <tr>
+                    <td>Expired On:</td>
+                    <td th:text="${#temporals.format(certificate.notAfter, 'yyyy-MM-dd HH:mm:ss')}">2024-12-31</td>
+                </tr>
+                <tr>
+                    <td>Status:</td>
+                    <td th:text="${certificate.status}">EXPIRED</td>
+                </tr>
+            </table>
+        </div>
+
+        <p><strong>Immediate action is required:</strong></p>
+        <ul>
+            <li>Renew this certificate immediately</li>
+            <li>Deploy the renewed certificate to your servers</li>
+            <li>Verify that services are functioning correctly</li>
+        </ul>
+
+        <div style="text-align: center;">
+            <a href="#" class="action-button">Renew Certificate Now</a>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated alert from Certificate Manager.</p>
+            <p>&copy; 2024 Certificate Manager. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - TLS Certificate Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary: #0f172a;
+            --color-accent: #3b82f6;
+            --color-accent-hover: #2563eb;
+            --color-bg: #f8fafc;
+            --color-surface: #ffffff;
+            --color-border: #e2e8f0;
+            --color-text: #1e293b;
+            --color-text-muted: #64748b;
+            --color-danger: #ef4444;
+            --color-danger-bg: #fee2e2;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 1rem;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+        .login-header p {
+            color: var(--color-text-muted);
+            margin-top: 0.5rem;
+        }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 0.9375rem;
+            border: 1px solid var(--color-border);
+            border-radius: 0.5rem;
+            background: var(--color-surface);
+            color: var(--color-text);
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            border: none;
+            background: var(--color-accent);
+            color: white;
+            cursor: pointer;
+            transition: background 150ms ease;
+        }
+        .btn-primary:hover { background: var(--color-accent-hover); }
+        .alert-error {
+            background: var(--color-danger-bg);
+            color: #991b1b;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+        .hint {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--color-border);
+            font-size: 0.8125rem;
+            color: var(--color-text-muted);
+        }
+        .hint code {
+            background: #f1f5f9;
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.25rem;
+            font-family: ui-monospace, monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-header">
+            <h1>CertMonitor</h1>
+            <p>Sign in to manage your certificates</p>
+        </div>
+
+        <div th:if="${param.error}" class="alert-error">
+            Invalid email or password.
+        </div>
+        <div th:if="${param.logout}" class="alert-error" style="background:#d1fae5;color:#065f46;">
+            You have been logged out.
+        </div>
+
+        <form th:action="@{/login}" method="post">
+            <div class="form-group">
+                <label for="username" class="form-label">Email</label>
+                <input type="email" id="username" name="username" class="form-control" placeholder="you@example.com" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-primary">Sign In</button>
+        </form>
+
+        <div class="hint">
+            <strong>Demo accounts:</strong><br>
+            <code>alice@example.com</code> / <code>password</code> (ADMIN)<br>
+            <code>bob@example.com</code> / <code>password</code> (MEMBER)<br>
+            <code>charlie@example.com</code> / <code>admin</code> (OWNER)
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} ?: 'TLS Certificate Monitor'">TLS Certificate Monitor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ===== DESIGN TOKENS ===== */
+        :root {
+            /* Colors - Professional Enterprise Palette */
+            --color-primary: #0f172a;
+            --color-primary-light: #1e293b;
+            --color-accent: #3b82f6;
+            --color-accent-hover: #2563eb;
+            --color-success: #10b981;
+            --color-success-bg: #d1fae5;
+            --color-warning: #f59e0b;
+            --color-warning-bg: #fef3c7;
+            --color-danger: #ef4444;
+            --color-danger-bg: #fee2e2;
+            --color-danger-dark: #991b1b;
+            --color-info: #06b6d4;
+            --color-info-bg: #cffafe;
+            
+            /* Neutrals */
+            --color-bg: #f8fafc;
+            --color-surface: #ffffff;
+            --color-border: #e2e8f0;
+            --color-text: #1e293b;
+            --color-text-muted: #64748b;
+            --color-text-light: #94a3b8;
+            
+            /* Spacing Scale (8px base) */
+            --space-1: 0.25rem;
+            --space-2: 0.5rem;
+            --space-3: 0.75rem;
+            --space-4: 1rem;
+            --space-5: 1.25rem;
+            --space-6: 1.5rem;
+            --space-8: 2rem;
+            --space-10: 2.5rem;
+            --space-12: 3rem;
+            --space-16: 4rem;
+            
+            /* Typography */
+            --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            
+            /* Border Radius */
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+            --radius-full: 9999px;
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            
+            /* Transitions */
+            --transition-fast: 150ms ease;
+            --transition-base: 200ms ease;
+            --transition-slow: 300ms ease;
+        }
+
+        /* ===== RESET & BASE ===== */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-display);
+            font-size: 0.9375rem;
+            line-height: 1.6;
+            color: var(--color-text);
+            background-color: var(--color-bg);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        a {
+            color: var(--color-accent);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+
+        a:hover {
+            color: var(--color-accent-hover);
+        }
+
+        /* ===== NAVIGATION ===== */
+        .navbar {
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+            padding: var(--space-4) var(--space-6);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            font-weight: 700;
+            font-size: 1.125rem;
+            color: var(--color-primary);
+        }
+
+        .navbar-brand svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .navbar-nav {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            list-style: none;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-md);
+            color: var(--color-text-muted);
+            font-weight: 500;
+            transition: all var(--transition-fast);
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: var(--color-bg);
+            color: var(--color-primary);
+        }
+
+        .nav-link svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border-radius: var(--radius-md);
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--color-accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-accent-hover);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: var(--space-1) var(--space-3);
+            font-size: 0.8125rem;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text);
+        }
+
+        .btn-outline:hover {
+            background: var(--color-bg);
+            color: var(--color-text);
+        }
+
+        /* User Dropdown */
+        .user-menu {
+            position: relative;
+        }
+
+        .user-toggle {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2);
+            border-radius: var(--radius-full);
+            background: var(--color-bg);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .user-toggle:hover {
+            background: var(--color-border);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-full);
+            object-fit: cover;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--color-text);
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: calc(100% + var(--space-2));
+            right: 0;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            min-width: 200px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all var(--transition-fast);
+        }
+
+        .user-menu:hover .user-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            color: var(--color-text);
+            transition: background var(--transition-fast);
+        }
+
+        .dropdown-item:hover {
+            background: var(--color-bg);
+            color: var(--color-text);
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: var(--color-border);
+            margin: var(--space-2) 0;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            flex: 1;
+            padding: var(--space-8) var(--space-6);
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            margin-bottom: var(--space-8);
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--color-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .page-subtitle {
+            color: var(--color-text-muted);
+            font-size: 1rem;
+        }
+
+        /* ===== FLASH MESSAGES ===== */
+        .flash-messages {
+            margin-bottom: var(--space-6);
+        }
+
+        .alert {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-4) var(--space-5);
+            border-radius: var(--radius-lg);
+            font-weight: 500;
+            margin-bottom: var(--space-3);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .alert-success {
+            background: var(--color-success-bg);
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .alert-error {
+            background: var(--color-danger-bg);
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-warning {
+            background: var(--color-warning-bg);
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+
+        .alert-info {
+            background: var(--color-info-bg);
+            color: #0e7490;
+            border: 1px solid #a5f3fc;
+        }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: var(--space-5) var(--space-6);
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        .card-body {
+            padding: var(--space-6);
+        }
+
+        /* Summary Cards Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: var(--space-6);
+            margin-bottom: var(--space-8);
+        }
+
+        .stat-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+            transition: all var(--transition-base);
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-text-muted);
+        }
+
+        .stat-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--color-primary);
+            line-height: 1;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .stat-icon.blue { background: #dbeafe; color: #1d4ed8; }
+        .stat-icon.yellow { background: #fef3c7; color: #b45309; }
+        .stat-icon.red { background: #fee2e2; color: #b91c1c; }
+        .stat-icon.green { background: #d1fae5; color: #047857; }
+
+        /* ===== TABLES ===== */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: var(--space-4) var(--space-5);
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .data-table th {
+            background: var(--color-bg);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-text-muted);
+            white-space: nowrap;
+        }
+
+        .data-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .data-table th.sortable:hover {
+            color: var(--color-text);
+        }
+
+        .data-table tbody tr {
+            transition: background var(--transition-fast);
+        }
+
+        .data-table tbody tr:hover {
+            background: var(--color-bg);
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Status Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-1);
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .badge-success {
+            background: var(--color-success-bg);
+            color: #065f46;
+        }
+
+        .badge-warning {
+            background: var(--color-warning-bg);
+            color: #92400e;
+        }
+
+        .badge-danger {
+            background: var(--color-danger-bg);
+            color: #991b1b;
+        }
+
+        .badge-secondary {
+            background: var(--color-bg);
+            color: var(--color-text-muted);
+        }
+
+        /* Days Remaining Color Coding */
+        .days-remaining {
+            font-weight: 600;
+            font-family: var(--font-mono);
+        }
+
+        .days-good { color: var(--color-success); }
+        .days-warning { color: var(--color-warning); }
+        .days-danger { color: var(--color-danger); }
+        .days-expired { color: var(--color-danger-dark); font-weight: 700; }
+
+        /* ===== FORMS ===== */
+        .form-group {
+            margin-bottom: var(--space-5);
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--color-text);
+            margin-bottom: var(--space-2);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: inherit;
+            font-size: 0.9375rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-surface);
+            color: var(--color-text);
+            transition: all var(--transition-fast);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-control::placeholder {
+            color: var(--color-text-light);
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right var(--space-3) center;
+            padding-right: var(--space-10);
+        }
+
+        .form-text {
+            font-size: 0.8125rem;
+            color: var(--color-text-muted);
+            margin-top: var(--space-2);
+        }
+
+        .form-error {
+            font-size: 0.8125rem;
+            color: var(--color-danger);
+            margin-top: var(--space-2);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: var(--space-1);
+            border-bottom: 2px solid var(--color-border);
+            margin-bottom: var(--space-6);
+        }
+
+        .tab-button {
+            padding: var(--space-3) var(--space-5);
+            font-family: inherit;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .tab-button:hover {
+            color: var(--color-text);
+        }
+
+        .tab-button.active {
+            color: var(--color-accent);
+            border-bottom-color: var(--color-accent);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ===== PAGINATION ===== */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            margin-top: var(--space-6);
+        }
+
+        .page-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            height: 36px;
+            padding: 0 var(--space-3);
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--color-text);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-decoration: none;
+        }
+
+        .page-link:hover {
+            background: var(--color-bg);
+            color: var(--color-text);
+        }
+
+        .page-link.active {
+            background: var(--color-accent);
+            border-color: var(--color-accent);
+            color: white;
+        }
+
+        .page-link.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            background: var(--color-surface);
+            border-top: 1px solid var(--color-border);
+            padding: var(--space-6);
+            text-align: center;
+            color: var(--color-text-muted);
+            font-size: 0.875rem;
+        }
+
+        .footer a {
+            color: var(--color-text-muted);
+            text-decoration: underline;
+        }
+
+        /* ===== FILTERS ===== */
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+            padding: var(--space-5);
+            background: var(--color-bg);
+            border-radius: var(--radius-lg);
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+
+        .filter-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-text-muted);
+        }
+
+        /* ===== ACTION BUTTONS ===== */
+        .action-buttons {
+            display: flex;
+            gap: var(--space-2);
+        }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            padding: var(--space-1);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-muted);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .btn-icon:hover {
+            background: var(--color-bg);
+            color: var(--color-text);
+        }
+
+        .btn-icon.danger:hover {
+            background: var(--color-danger-bg);
+            color: var(--color-danger);
+            border-color: var(--color-danger);
+        }
+
+        /* ===== CERTIFICATE DETAIL ===== */
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-6);
+        }
+
+        .detail-section {
+            margin-bottom: var(--space-8);
+        }
+
+        .detail-section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-3);
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        .detail-row {
+            display: flex;
+            padding: var(--space-3) 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: var(--color-text-muted);
+            width: 140px;
+            flex-shrink: 0;
+            font-size: 0.875rem;
+        }
+
+        .detail-value {
+            color: var(--color-text);
+            font-size: 0.9375rem;
+            word-break: break-word;
+        }
+
+        .detail-value.mono {
+            font-family: var(--font-mono);
+            font-size: 0.8125rem;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-wrap: wrap;
+                gap: var(--space-4);
+            }
+
+            .navbar-nav {
+                order: 3;
+                width: 100%;
+                overflow-x: auto;
+                padding-bottom: var(--space-2);
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="32" height="32" rx="8" fill="#0f172a"/>
+                <path d="M16 6L16 26M16 6L10 12M16 6L22 12M16 26L10 20M16 26L22 20" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="16" cy="16" r="4" stroke="#3b82f6" stroke-width="2"/>
+            </svg>
+            <span>CertMonitor</span>
+        </a>
+
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a href="/dashboard" class="nav-link" th:classappend="${#httpServletRequest.requestURI == '/dashboard'} ? 'active'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                    Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/certificates" class="nav-link" th:classappend="${#httpServletRequest.requestURI.startsWith('/certificates')} ? 'active'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 12l2 2 4-4"/>
+                        <circle cx="12" cy="12" r="9"/>
+                    </svg>
+                    Certificates
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/alerts" class="nav-link" th:classappend="${#httpServletRequest.requestURI.startsWith('/alerts')} ? 'active'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                    </svg>
+                    Alerts
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/groups" class="nav-link" th:classappend="${#httpServletRequest.requestURI.startsWith('/groups')} ? 'active'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 010 7.75"/>
+                    </svg>
+                    Groups
+                </a>
+            </li>
+        </ul>
+
+        <div class="navbar-actions">
+            <a href="/certificates/new" class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Add Certificate
+            </a>
+
+            <div class="user-menu" sec:authorize="isAuthenticated()">
+                <div class="user-toggle">
+                    <img th:src="${#authentication.principal.user.picture} ?: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%2216%22 fill=%22%23e2e8f0%22/%3E%3Ccircle cx=%2216%22 cy=%2212%22 r=%225%22 fill=%22%2394a3b8%22/%3E%3Cpath d=%22M8 26c0-4.4 3.6-8 8-8s8 3.6 8 8%22 fill=%22%2394a3b8%22/%3E%3C/svg%3E'"
+                         alt="User avatar"
+                         class="user-avatar"
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%2216%22 fill=%22%23e2e8f0%22/%3E%3Ccircle cx=%2216%22 cy=%2212%22 r=%225%22 fill=%22%2394a3b8%22/%3E%3Cpath d=%22M8 26c0-4.4 3.6-8 8-8s8 3.6 8 8%22 fill=%22%2394a3b8%22/%3E%3C/svg%3E'"/>
+                    <span class="user-name" th:text="${#authentication.principal.user.name} ?: ${#authentication.principal.user.email}">User</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="color: var(--color-text-light)">
+                        <path d="M6 9l6 6 6-6"/>
+                    </svg>
+                </div>
+                <div class="user-dropdown">
+                    <div class="dropdown-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                            <circle cx="12" cy="8" r="4"/>
+                            <path d="M20 21a8 8 0 10-16 0"/>
+                        </svg>
+                        <span th:text="${#authentication.principal.user.email}">user@example.com</span>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="/logout" class="dropdown-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+                            <polyline points="16,17 21,12 16,7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        Sign Out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div class="main-content">
+        <div th:if="${successMessage}" class="flash-messages">
+            <div class="alert alert-success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                    <polyline points="22,4 12,14.01 9,11.01"/>
+                </svg>
+                <span th:text="${successMessage}">Success message</span>
+            </div>
+        </div>
+
+        <div th:if="${errorMessage}" class="flash-messages">
+            <div class="alert alert-error">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+                <span th:text="${errorMessage}">Error message</span>
+            </div>
+        </div>
+
+        <div th:if="${warningMessage}" class="flash-messages">
+            <div class="alert alert-warning">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span th:text="${warningMessage}">Warning message</span>
+            </div>
+        </div>
+
+        <div th:if="${infoMessage}" class="flash-messages">
+            <div class="alert alert-info">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="16" x2="12" y2="12"/>
+                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <span th:text="${infoMessage}">Info message</span>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <div th:replace="${content}">Page content goes here</div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; <span th:text="${#temporals.format(#temporals.createNow(), 'yyyy')}">2024</span> TLS Certificate Monitor. All rights reserved.</p>
+        <p style="margin-top: var(--space-2); font-size: 0.8125rem;">
+            <a href="#">Privacy Policy</a> &bull;
+            <a href="#">Terms of Service</a> &bull;
+            <a href="#">Documentation</a>
+        </p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout :: html(~{::title}, ~{::#page-content})}">
+<head>
+    <title>Certificates - TLS Certificate Monitor</title>
+</head>
+<body>
+    <div id="page-content">
+        <!-- Page Header -->
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 class="page-title">Certificates</h1>
+                <p class="page-subtitle">Manage and monitor your SSL/TLS certificates</p>
+            </div>
+            <a href="/certificates/new" class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Add Certificate
+            </a>
+        </div>
+
+        <!-- Filters -->
+        <form class="filters" method="get" action="/certificates">
+            <div class="filter-group">
+                <label class="filter-label" for="filter-group">Group</label>
+                <select id="filter-group" name="groupId" class="form-control form-select" style="min-width: 180px;">
+                    <option value="">All Groups</option>
+                    <option th:each="group : ${groups}" 
+                            th:value="${group.id}" 
+                            th:text="${group.name}"
+                            th:selected="${param.groupId} != null and ${param.groupId[0]} == ${#strings.toString(group.id)}">
+                        Production
+                    </option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label" for="filter-status">Status</label>
+                <select id="filter-status" name="status" class="form-control form-select" style="min-width: 150px;">
+                    <option value="">All Statuses</option>
+                    <option value="ACTIVE" th:selected="${param.status} != null and ${param.status[0]} == 'ACTIVE'">Active</option>
+                    <option value="EXPIRED" th:selected="${param.status} != null and ${param.status[0]} == 'EXPIRED'">Expired</option>
+                    <option value="REVOKED" th:selected="${param.status} != null and ${param.status[0]} == 'REVOKED'">Revoked</option>
+                    <option value="PENDING" th:selected="${param.status} != null and ${param.status[0]} == 'PENDING'">Pending</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label" for="filter-sort">Sort By</label>
+                <select id="filter-sort" name="sortBy" class="form-control form-select" style="min-width: 150px;">
+                    <option value="commonName" th:selected="${param.sortBy} == null or ${param.sortBy[0]} == 'commonName'">Common Name</option>
+                    <option value="notAfter" th:selected="${param.sortBy} != null and ${param.sortBy[0]} == 'notAfter'">Expiry Date</option>
+                    <option value="daysRemaining" th:selected="${param.sortBy} != null and ${param.sortBy[0]} == 'daysRemaining'">Days Remaining</option>
+                    <option value="issuer" th:selected="${param.sortBy} != null and ${param.sortBy[0]} == 'issuer'">Issuer</option>
+                </select>
+            </div>
+
+            <div class="filter-group" style="justify-content: flex-end;">
+                <label class="filter-label" style="visibility: hidden;">Action</label>
+                <button type="submit" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true" style="margin-right: var(--space-2);">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    Filter
+                </button>
+            </div>
+        </form>
+
+        <!-- Certificates Table -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <span th:text="${pagination.totalElements} ?: 0">0</span> Certificates
+                </h2>
+                <div style="display: flex; gap: var(--space-2);">
+                    <button class="btn btn-outline btn-sm" onclick="window.location.reload()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" aria-hidden="true" style="margin-right: var(--space-1);">
+                            <path d="M23 4v6h-6"/>
+                            <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" onclick="location.href='/certificates?sortBy=commonName'">
+                                    Common Name
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="display: inline; vertical-align: middle;" aria-hidden="true">
+                                        <path d="M12 5v14M5 12l7 7 7-7"/>
+                                    </svg>
+                                </th>
+                                <th>Issuer</th>
+                                <th>Group</th>
+                                <th class="sortable" onclick="location.href='/certificates?sortBy=notAfter'">
+                                    Expiry Date
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="display: inline; vertical-align: middle;" aria-hidden="true">
+                                        <path d="M12 5v14M5 12l7 7 7-7"/>
+                                    </svg>
+                                </th>
+                                <th class="sortable" onclick="location.href='/certificates?sortBy=daysRemaining'">
+                                    Days Remaining
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="display: inline; vertical-align: middle;" aria-hidden="true">
+                                        <path d="M12 5v14M5 12l7 7 7-7"/>
+                                    </svg>
+                                </th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(certificates)}">
+                                <td colspan="7" style="text-align: center; padding: var(--space-12); color: var(--color-text-muted);">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48" style="margin: 0 auto var(--space-4); opacity: 0.5;" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M12 6v6l4 2"/>
+                                    </svg>
+                                    <p>No certificates found.</p>
+                                    <a href="/certificates/new" style="color: var(--color-accent); font-weight: 600;">Add your first certificate</a>
+                                </td>
+                            </tr>
+                            <tr th:each="cert : ${certificates}">
+                                <td>
+                                    <a th:href="@{/certificates/{id}(id=${cert.id})}" 
+                                       th:text="${cert.commonName}"
+                                       style="font-weight: 600; color: var(--color-accent);">
+                                        example.com
+                                    </a>
+                                </td>
+                                <td th:text="${cert.issuer}" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    Let's Encrypt Authority X3
+                                </td>
+                                <td>
+                                    <span th:if="${cert.groupName}" class="badge badge-secondary" th:text="${cert.groupName}">Production</span>
+                                    <span th:unless="${cert.groupName}" style="color: var(--color-text-light);">—</span>
+                                </td>
+                                <td th:text="${#temporals.format(cert.notAfter, 'MMM dd, yyyy')}">Dec 31, 2024</td>
+                                <td>
+                                    <span class="days-remaining"
+                                          th:classappend="${cert.daysUntilExpiry <= 0} ? 'days-expired' : (${cert.daysUntilExpiry < 30} ? 'days-danger' : (${cert.daysUntilExpiry < 60} ? 'days-warning' : 'days-good'))"
+                                          th:text="${cert.daysUntilExpiry} + ' days'">
+                                        15 days
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${cert.status == 'ACTIVE'} ? 'badge-success' : (${cert.status == 'EXPIRED'} ? 'badge-danger' : (${cert.status == 'REVOKED'} ? 'badge-secondary' : 'badge-warning'))"
+                                          th:text="${cert.status}">
+                                        ACTIVE
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a th:href="@{/certificates/{id}(id=${cert.id})}" class="btn-icon" title="View Details">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </svg>
+                                        </a>
+                                        <form th:action="@{/certificates/{id}(id=${cert.id})}" method="post" style="display: inline;"
+                                              onsubmit="return confirm('Are you sure you want to delete this certificate?');">
+                                            <input type="hidden" name="_method" value="delete"/>
+                                            <button type="submit" class="btn-icon danger" title="Delete Certificate">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
+                                                    <path d="M3 6h18"/>
+                                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                                    <line x1="10" y1="11" x2="10" y2="17"/>
+                                                    <line x1="14" y1="11" x2="14" y2="17"/>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div th:if="${pagination.totalPages > 1}" class="pagination">
+                    <a th:href="@{/certificates(page=0, groupId=${param.groupId}, status=${param.status}, sortBy=${param.sortBy})}"
+                       class="page-link"
+                       th:classappend="${pagination.number == 0} ? 'disabled'"
+                       th:if="${pagination.number > 0}"
+                       aria-label="Previous page">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
+                            <path d="M15 18l-6-6 6-6"/>
+                        </svg>
+                    </a>
+
+                    <a th:each="i : ${#numbers.sequence(0, pagination.totalPages - 1)}"
+                       th:href="@{/certificates(page=${i}, groupId=${param.groupId}, status=${param.status}, sortBy=${param.sortBy})}"
+                       th:text="${i + 1}"
+                       class="page-link"
+                       th:classappend="${pagination.number == i} ? 'active'"
+                       th:if="${i >= pagination.number - 3 and i <= pagination.number + 3}">
+                        1
+                    </a>
+
+                    <a th:href="@{/certificates(page=${pagination.number + 1}, groupId=${param.groupId}, status=${param.status}, sortBy=${param.sortBy})}"
+                       class="page-link"
+                       th:classappend="${pagination.number >= pagination.totalPages - 1} ? 'disabled'"
+                       th:if="${pagination.number < pagination.totalPages - 1}"
+                       aria-label="Next page">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

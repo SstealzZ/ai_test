@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout :: html(~{::title}, ~{::#page-content})}">
+<head>
+    <title>Groups - TLS Certificate Monitor</title>
+</head>
+<body>
+    <div id="page-content">
+        <!-- Page Header -->
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 class="page-title">Groups</h1>
+                <p class="page-subtitle">Manage certificate access groups and members</p>
+            </div>
+            <button class="btn btn-primary" onclick="document.getElementById('new-group-modal').style.display = 'block';">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true" style="margin-right: var(--space-2);">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                New Group
+            </button>
+        </div>
+
+        <!-- Groups Grid -->
+        <div class="stats-grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
+            <div th:if="${#lists.isEmpty(groups)}" style="grid-column: 1 / -1; text-align: center; padding: var(--space-16); color: var(--color-text-muted);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64" style="margin: 0 auto var(--space-6); opacity: 0.5;" aria-hidden="true">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 010 7.75"/>
+                </svg>
+                <h3 style="font-size: 1.25rem; font-weight: 600; color: var(--color-text); margin-bottom: var(--space-2);">No groups yet</h3>
+                <p style="margin-bottom: var(--space-6);">Create a group to organize your certificates and manage team access</p>
+                <button class="btn btn-primary" onclick="document.getElementById('new-group-modal').style.display = 'block';">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true" style="margin-right: var(--space-2);">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    Create Your First Group
+                </button>
+            </div>
+
+            <div class="card" th:each="group : ${groups}" style="display: flex; flex-direction: column;">
+                <div class="card-header">
+                    <div>
+                        <h3 class="card-title" style="margin-bottom: var(--space-1);" th:text="${group.name}">Production</h3>
+                        <p style="font-size: 0.8125rem; color: var(--color-text-muted);" th:text="${group.description}">Production environment certificates</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--color-primary);" th:text="${group.memberCount} ?: 0">5</div>
+                        <div style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Members</div>
+                    </div>
+                </div>
+                <div class="card-body" style="flex: 1;">
+                    <div style="margin-bottom: var(--space-4);">
+                        <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted); margin-bottom: var(--space-2);">Members</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: var(--space-2);">
+                            <span th:each="member : ${group.members}" 
+                                  class="badge badge-secondary" 
+                                  th:text="${member.userName}"
+                                  th:title="${member.role}">
+                                John Doe
+                            </span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: var(--space-2); margin-top: auto;">
+                        <a th:href="@{/groups/{id}(id=${group.id})}" class="btn btn-outline btn-sm" style="flex: 1;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" aria-hidden="true" style="margin-right: var(--space-1);">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            View Details
+                        </a>
+                        <button class="btn btn-outline btn-sm" onclick="document.getElementById('add-member-modal-' + ${group.id}).style.display = 'block';">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" aria-hidden="true">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Group Modal -->
+        <div id="new-group-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+            <div class="card" style="width: 100%; max-width: 480px; margin: var(--space-6);">
+                <div class="card-header">
+                    <h2 class="card-title">Create New Group</h2>
+                    <button class="btn-icon" onclick="document.getElementById('new-group-modal').style.display = 'none';" style="margin-left: auto;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <form th:action="@{/groups}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label" for="group-name">Group Name</label>
+                            <input type="text" id="group-name" name="name" class="form-control" required placeholder="e.g., Production, Staging"/>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="group-description">Description (Optional)</label>
+                            <textarea id="group-description" name="description" class="form-control" rows="3" placeholder="Describe the purpose of this group"></textarea>
+                        </div>
+                    </div>
+                    <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--color-border); display: flex; gap: var(--space-3); justify-content: flex-end;">
+                        <button type="button" class="btn btn-outline" onclick="document.getElementById('new-group-modal').style.display = 'none';">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Group</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Member Modals (one per group) -->
+        <div th:each="group : ${groups}" 
+             th:id="'add-member-modal-' + ${group.id}" 
+             style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+            <div class="card" style="width: 100%; max-width: 480px; margin: var(--space-6);">
+                <div class="card-header">
+                    <h2 class="card-title">Add Member to <span th:text="${group.name}">Group</span></h2>
+                    <button class="btn-icon" th:onclick="'document.getElementById(\'add-member-modal-' + ${group.id} + '\').style.display = \'none\';'" style="margin-left: auto;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <form th:action="@{/groups/{id}/members(id=${group.id})}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label" for="member-email-' + ${group.id} + '">User Email</label>
+                            <input type="email" 
+                                   th:id="'member-email-' + ${group.id}" 
+                                   name="email" 
+                                   class="form-control" 
+                                   required 
+                                   placeholder="user@example.com"/>
+                            <p class="form-text">The user must have an account in the system</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" th:for="'member-role-' + ${group.id}">Role</label>
+                            <select th:id="'member-role-' + ${group.id}" name="role" class="form-control form-select">
+                                <option value="VIEWER">Viewer - Can view certificates</option>
+                                <option value="MEMBER">Member - Can view and manage certificates</option>
+                                <option value="ADMIN">Admin - Full group management</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--color-border); display: flex; gap: var(--space-3); justify-content: flex-end;">
+                        <button type="button" class="btn btn-outline" th:onclick="'document.getElementById(\'add-member-modal-' + ${group.id} + '\').style.display = \'none\';'">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Member</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Close modals when clicking outside
+        document.querySelectorAll('[id$="-modal"]').forEach(function(modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

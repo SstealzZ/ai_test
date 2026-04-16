@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout :: html(~{::title}, ~{::#page-content})}">
+<head>
+    <title>Add Certificate - TLS Certificate Monitor</title>
+    <style>
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+        .tab-nav { display: flex; gap: var(--space-1); border-bottom: 2px solid var(--color-border); margin-bottom: var(--space-6); }
+        .tab-nav button {
+            padding: var(--space-3) var(--space-5);
+            font-family: inherit;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        .tab-nav button:hover { color: var(--color-text); }
+        .tab-nav button.active {
+            color: var(--color-accent);
+            border-bottom-color: var(--color-accent);
+        }
+    </style>
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-pane').forEach(function(el) { el.classList.remove('active'); });
+            document.querySelectorAll('.tab-nav button').forEach(function(el) { el.classList.remove('active'); });
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector('.tab-nav button[data-tab="' + tabId + '"]').classList.add('active');
+        }
+    </script>
+</head>
+<body>
+    <div id="page-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2);">
+                <a href="/certificates" style="color: var(--color-text-muted);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" aria-hidden="true">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+                <h1 class="page-title" style="margin: 0;">Add Certificate</h1>
+            </div>
+            <p class="page-subtitle">Upload a certificate file or fetch from a URL</p>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <!-- Tabs Navigation -->
+                <div class="tab-nav">
+                    <button type="button" class="active" data-tab="upload-tab" onclick="switchTab('upload-tab')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true" style="display: inline; vertical-align: middle; margin-right: var(--space-2);">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                            <polyline points="17,8 12,3 7,8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        Upload File
+                    </button>
+                    <button type="button" data-tab="url-tab" onclick="switchTab('url-tab')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true" style="display: inline; vertical-align: middle; margin-right: var(--space-2);">
+                            <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+                            <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+                        </svg>
+                        Fetch from URL
+                    </button>
+                </div>
+
+                <!-- Upload File Tab -->
+                <form id="upload-tab" class="tab-pane active" 
+                      th:action="@{/certificates}" 
+                      method="post" 
+                      enctype="multipart/form-data">
+                    <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
+                    
+                    <div th:if="${uploadErrors}" class="alert alert-error" style="margin-bottom: var(--space-6);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        <ul style="margin: 0; padding-left: var(--space-4);">
+                            <li th:each="error : ${uploadErrors}" th:text="${error}">Error message</li>
+                        </ul>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="certificate-file">Certificate File (PEM format)</label>
+                        <input type="file" 
+                               id="certificate-file" 
+                               name="file" 
+                               class="form-control" 
+                               accept=".pem,.crt,.cer,.cert" 
+                               required
+                               style="padding: var(--space-4);"/>
+                        <p class="form-text">Supported formats: .pem, .crt, .cer, .cert</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="upload-group">Group (Optional)</label>
+                        <select id="upload-group" name="groupId" class="form-control form-select">
+                            <option value="">No Group</option>
+                            <option th:each="group : ${groups}" 
+                                    th:value="${group.id}" 
+                                    th:text="${group.name}">
+                                Production
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="upload-threshold">Alert Threshold (days)</label>
+                        <input type="number" 
+                               id="upload-threshold" 
+                               name="thresholdDays" 
+                               class="form-control" 
+                               min="1" 
+                               max="365" 
+                               value="30"/>
+                        <p class="form-text">You will be alerted when the certificate expires within this period</p>
+                    </div>
+
+                    <div style="display: flex; gap: var(--space-3); margin-top: var(--space-8);">
+                        <button type="submit" class="btn btn-primary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true" style="margin-right: var(--space-2);">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                            Add Certificate
+                        </button>
+                        <a href="/certificates" class="btn btn-outline">Cancel</a>
+                    </div>
+                </form>
+
+                <!-- Fetch from URL Tab -->
+                <form id="url-tab" class="tab-pane" 
+                      th:action="@{/certificates/from-url}" 
+                      method="post">
+                    <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
+                    
+                    <div th:if="${urlErrors}" class="alert alert-error" style="margin-bottom: var(--space-6);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        <ul style="margin: 0; padding-left: var(--space-4);">
+                            <li th:each="error : ${urlErrors}" th:text="${error}">Error message</li>
+                        </ul>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="certificate-url">Certificate URL</label>
+                        <input type="url" 
+                               id="certificate-url" 
+                               name="url" 
+                               class="form-control" 
+                               placeholder="https://example.com/cert.pem" 
+                               required/>
+                        <p class="form-text">Publicly accessible URL returning PEM-encoded certificate</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="url-group">Group (Optional)</label>
+                        <select id="url-group" name="groupId" class="form-control form-select">
+                            <option value="">No Group</option>
+                            <option th:each="group : ${groups}" 
+                                    th:value="${group.id}" 
+                                    th:text="${group.name}">
+                                Production
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="url-threshold">Alert Threshold (days)</label>
+                        <input type="number" 
+                               id="url-threshold" 
+                               name="thresholdDays" 
+                               class="form-control" 
+                               min="1" 
+                               max="365" 
+                               value="30"/>
+                        <p class="form-text">You will be alerted when the certificate expires within this period</p>
+                    </div>
+
+                    <div style="display: flex; gap: var(--space-3); margin-top: var(--space-8);">
+                        <button type="submit" class="btn btn-primary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true" style="margin-right: var(--space-2);">
+                                <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+                                <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+                            </svg>
+                            Fetch and Add
+                        </button>
+                        <a href="/certificates" class="btn btn-outline">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="card" style="margin-top: var(--space-6);">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true" style="display: inline; vertical-align: middle; margin-right: var(--space-2);">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    Certificate Format Guide
+                </h2>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-6);">
+                    <div>
+                        <h3 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: var(--space-3); color: var(--color-primary);">PEM Format Example</h3>
+                        <pre style="background: var(--color-bg); padding: var(--space-4); border-radius: var(--radius-md); overflow-x: auto; font-family: var(--font-mono); font-size: 0.8125rem; color: var(--color-text);"><code>-----BEGIN CERTIFICATE-----
+MIIDXTCCAkWgAwIBAgIJAJC1HiIAZAiUMA0Gcg...
+...base64 encoded certificate data...
+-----END CERTIFICATE-----</code></pre>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: var(--space-3); color: var(--color-primary);">Supported Sources</h3>
+                        <ul style="margin: 0; padding-left: var(--space-4); color: var(--color-text-muted);">
+                            <li style="margin-bottom: var(--space-2);">Direct certificate URLs</li>
+                            <li style="margin-bottom: var(--space-2);">Certificate transparency logs</li>
+                            <li style="margin-bottom: var(--space-2);">Internal certificate servers</li>
+                            <li>Any HTTPS endpoint returning PEM</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

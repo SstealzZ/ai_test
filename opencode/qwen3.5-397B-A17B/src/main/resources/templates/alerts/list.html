@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout :: html(~{::title}, ~{::#page-content})}">
+<head>
+    <title>Alerts - TLS Certificate Monitor</title>
+</head>
+<body>
+    <div id="page-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">Alerts</h1>
+            <p class="page-subtitle">Certificate expiry warnings and notifications</p>
+        </div>
+
+        <!-- Filters -->
+        <form class="filters" method="get" action="/alerts">
+            <div class="filter-group">
+                <label class="filter-label" for="filter-type">Alert Type</label>
+                <select id="filter-type" name="type" class="form-control form-select" style="min-width: 150px;">
+                    <option value="">All Types</option>
+                    <option value="EXPIRY_WARNING" th:selected="${param.type} != null and ${param.type[0]} == 'EXPIRY_WARNING'">Warning</option>
+                    <option value="EXPIRED" th:selected="${param.type} != null and ${param.type[0]} == 'EXPIRED'">Expired</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label" for="filter-status">Status</label>
+                <select id="filter-status" name="status" class="form-control form-select" style="min-width: 150px;">
+                    <option value="">All Statuses</option>
+                    <option value="UNREAD" th:selected="${param.status} != null and ${param.status[0]} == 'UNREAD'">Unread</option>
+                    <option value="READ" th:selected="${param.status} != null and ${param.status[0]} == 'READ'">Read</option>
+                </select>
+            </div>
+
+            <div class="filter-group" style="justify-content: flex-end;">
+                <label class="filter-label" style="visibility: hidden;">Action</label>
+                <button type="submit" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true" style="margin-right: var(--space-2);">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    Filter
+                </button>
+            </div>
+        </form>
+
+        <!-- Alerts Summary -->
+        <div class="stats-grid" style="margin-bottom: var(--space-6);">
+            <div class="stat-card">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <div class="stat-label">Total Alerts</div>
+                        <div class="stat-value" th:text="${stats.totalAlerts} ?: 0">0</div>
+                    </div>
+                    <div class="stat-icon" style="background: #dbeafe; color: #1d4ed8;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" aria-hidden="true">
+                            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <div class="stat-label">Unread</div>
+                        <div class="stat-value" style="color: var(--color-warning);" th:text="${stats.unreadCount} ?: 0">0</div>
+                    </div>
+                    <div class="stat-icon yellow">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="16" x2="12" y2="12"/>
+                            <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <div class="stat-label">Warnings</div>
+                        <div class="stat-value" style="color: var(--color-warning);" th:text="${stats.warningCount} ?: 0">0</div>
+                    </div>
+                    <div class="stat-icon yellow">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" aria-hidden="true">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <div class="stat-label">Expired</div>
+                        <div class="stat-value" style="color: var(--color-danger);" th:text="${stats.expiredCount} ?: 0">0</div>
+                    </div>
+                    <div class="stat-icon red">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts List -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Alert History</h2>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Certificate</th>
+                                <th>Message</th>
+                                <th>Recipient</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(alerts)}">
+                                <td colspan="6" style="text-align: center; padding: var(--space-12); color: var(--color-text-muted);">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48" style="margin: 0 auto var(--space-4); opacity: 0.5;" aria-hidden="true">
+                                        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                        <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                                    </svg>
+                                    <p>No alerts found.</p>
+                                    <p style="margin-top: var(--space-2); font-size: 0.875rem;">Alerts will appear here when certificates approach expiration</p>
+                                </td>
+                            </tr>
+                            <tr th:each="alert : ${alerts}">
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${alert.alertType == 'EXPIRY_WARNING'} ? 'badge-warning' : 'badge-danger'"
+                                          th:text="${alert.alertType == 'EXPIRY_WARNING'} ? 'Warning' : 'Expired'">
+                                        Warning
+                                    </span>
+                                </td>
+                                <td>
+                                    <a th:if="${alert.certificateId}" 
+                                       th:href="@{/certificates/{id}(id=${alert.certificateId})}"
+                                       th:text="${alert.certificateName}"
+                                       style="font-weight: 600; color: var(--color-accent);">
+                                        example.com
+                                    </a>
+                                    <span th:unless="${alert.certificateId}" th:text="${alert.certificateName}" style="color: var(--color-text-muted);">Unknown</span>
+                                </td>
+                                <td th:text="${alert.message}">Certificate will expire in 30 days</td>
+                                <td th:text="${alert.recipientEmail}">admin@example.com</td>
+                                <td th:text="${#temporals.format(alert.sentAt, 'MMM dd, yyyy HH:mm')}">Jan 15, 2024 10:30</td>
+                                <td>
+                                    <span class="badge badge-secondary" th:text="${alert.read} ? 'Read' : 'Unread'">Unread</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div th:if="${pagination.totalPages > 1}" class="pagination">
+                    <a th:href="@{/alerts(page=0, type=${param.type}, status=${param.status})}"
+                       class="page-link"
+                       th:classappend="${pagination.number == 0} ? 'disabled'"
+                       th:if="${pagination.number > 0}"
+                       aria-label="Previous page">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
+                            <path d="M15 18l-6-6 6-6"/>
+                        </svg>
+                    </a>
+
+                    <a th:each="i : ${#numbers.sequence(0, pagination.totalPages - 1)}"
+                       th:href="@{/alerts(page=${i}, type=${param.type}, status=${param.status})}"
+                       th:text="${i + 1}"
+                       class="page-link"
+                       th:classappend="${pagination.number == i} ? 'active'"
+                       th:if="${i >= pagination.number - 3 and i <= pagination.number + 3}">
+                        1
+                    </a>
+
+                    <a th:href="@{/alerts(page=${pagination.number + 1}, type=${param.type}, status=${param.status})}"
+                       class="page-link"
+                       th:classappend="${pagination.number >= pagination.totalPages - 1} ? 'disabled'"
+                       th:if="${pagination.number < pagination.totalPages - 1}"
+                       aria-label="Next page">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

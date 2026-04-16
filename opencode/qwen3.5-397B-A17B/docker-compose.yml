@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: cert-manager-postgres
+    environment:
+      POSTGRES_DB: certmanager
+      POSTGRES_USER: certmanager
+      POSTGRES_PASSWORD: certmanager
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U certmanager -d certmanager"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MailHog - Email Testing Tool
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: cert-manager-mailhog
+    ports:
+      - "1025:1025"  # SMTP server
+      - "8025:8025"  # Web UI
+    restart: unless-stopped
+
+  # Application Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cert-manager-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/certmanager
+      SPRING_DATASOURCE_USERNAME: certmanager
+      SPRING_DATASOURCE_PASSWORD: certmanager
+      SPRING_MAIL_HOST: mailhog
+      SPRING_MAIL_PORT: 1025
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
