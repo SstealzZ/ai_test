@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TLS Certificate Alert Service</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+            --success: #16a34a;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1f2937;
+            --border: #e5e7eb;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+        }
+        header {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 { margin: 0; font-size: 1.25rem; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .card {
+            background: var(--card);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-secondary { background: var(--border); color: var(--text); }
+        input, select {
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+        .form-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; }
+        .form-row label { min-width: 120px; font-weight: 500; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+        th { font-weight: 600; background: var(--bg); }
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-expired { background: #fee2e2; color: var(--danger); }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-ok { background: #dcfce7; color: var(--success); }
+        .hidden { display: none !important; }
+        .login-box { max-width: 360px; margin: 10vh auto; }
+        .login-box h2 { margin-top: 0; }
+        .login-box input { width: 100%; margin-bottom: 0.75rem; }
+        .login-box .btn { width: 100%; }
+        .nav-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        .nav-tab { background: transparent; border: none; padding: 0.5rem 1rem; cursor: pointer; font-weight: 500; color: #6b7280; }
+        .nav-tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+        .error { color: var(--danger); font-size: 0.875rem; margin-top: 0.5rem; }
+        .success { color: var(--success); font-size: 0.875rem; margin-top: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        const API = '';
+        let state = { token: null, user: null, tab: 'certificates' };
+
+        function render() {
+            const app = document.getElementById('app');
+            if (!state.token) {
+                app.innerHTML = loginView();
+                bindLogin();
+                return;
+            }
+            app.innerHTML = `
+                <header>
+                    <h1>TLS Certificate Alert Service</h1>
+                    <div>
+                        <span style="margin-right:1rem">
+                            ${state.user.username} · ${state.user.groupName} · ${state.user.role}
+                        </span>
+                        <button class="btn btn-secondary" id="logout">Logout</button>
+                    </div>
+                </header>
+                <div class="container">
+                    <div class="nav-tabs">
+                        <button class="nav-tab ${state.tab === 'certificates' ? 'active' : ''}" data-tab="certificates">Certificates</button>
+                        <button class="nav-tab ${state.tab === 'alerts' ? 'active' : ''}" data-tab="alerts">Alerts</button>
+                        ${state.user.role === 'CERT_ADMIN' ? `<button class="nav-tab ${state.tab === 'settings' ? 'active' : ''}" data-tab="settings">Settings</button>` : ''}
+                    </div>
+                    <div id="tab-content"></div>
+                </div>
+            `;
+            document.getElementById('logout').onclick = () => { state = { token: null, user: null, tab: 'certificates' }; render(); };
+                        document.querySelectorAll('.nav-tab').forEach(t => { t.onclick = () => { state.tab = t.dataset.tab; renderTab(); }; });
+            renderTab();
+        }
+
+        function loginView() {
+            return `
+                <div class="card login-box">
+                    <h2>Sign In</h2>
+                    <p style="color:#6b7280;font-size:0.875rem">Demo accounts: alice / bob / charlie (password: password)</p>
+                    <input type="text" id="username" placeholder="Username" />
+                    <input type="password" id="password" placeholder="Password" />
+                    <button class="btn btn-primary" id="loginBtn">Sign In</button>
+                    <div id="loginError" class="error"></div>
+                </div>
+            `;
+        }
+
+        function bindLogin() {
+            document.getElementById('loginBtn').onclick = async () => {
+                const u = document.getElementById('username').value;
+                const p = document.getElementById('password').value;
+                try {
+                    const res = await fetch(`${API}/api/v1/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: u, password: p })
+                    });
+                    if (!res.ok) throw new Error('Invalid credentials');
+                    const data = await res.json();
+                    state.token = data.token;
+                    state.user = data;
+                    render();
+                } catch (e) {
+                    document.getElementById('loginError').textContent = e.message;
+                }
+            };
+        }
+
+        async function api(path, opts = {}) {
+            opts.headers = opts.headers || {};
+            opts.headers['Authorization'] = 'Bearer ' + state.token;
+            const res = await fetch(`${API}${path}`, opts);
+            if (res.status === 401 || res.status === 403) { state = { token: null, user: null, tab: 'certificates' }; render(); throw new Error('Session expired'); }
+            if (!res.ok) throw new Error(await res.text());
+            return res.status === 204 ? null : res.json();
+        }
+
+        async function renderTab() {
+            const container = document.getElementById('tab-content');
+            if (state.tab === 'certificates') {
+                container.innerHTML = `
+                    ${state.user.role === 'CERT_ADMIN' ? `
+                    <div class="card">
+                        <h3>Add Certificate</h3>
+                        <div class="form-row">
+                            <label>From URL:</label>
+                            <input type="text" id="urlInput" placeholder="https://example.com" style="flex:1" />
+                            <button class="btn btn-primary" id="addUrlBtn">Fetch</button>
+                        </div>
+                        <div class="form-row">
+                            <label>Upload file:</label>
+                            <input type="file" id="fileInput" accept=".cer,.crt,.pem" />
+                            <button class="btn btn-primary" id="uploadBtn">Upload</button>
+                        </div>
+                        <div id="certMsg"></div>
+                    </div>` : ''}
+                    <div class="card">
+                        <h3>Certificates</h3>
+                        <div id="certTable"></div>
+                    </div>
+                `;
+                if (state.user.role === 'CERT_ADMIN') {
+                    document.getElementById('addUrlBtn').onclick = async () => {
+                        const url = document.getElementById('urlInput').value;
+                        try {
+                            await api('/api/v1/certificates/from-url?url=' + encodeURIComponent(url), { method: 'POST' });
+                            document.getElementById('certMsg').innerHTML = '<span class="success">Certificate added from URL.</span>';
+                            loadCerts();
+                        } catch (e) { document.getElementById('certMsg').innerHTML = '<span class="error">' + e.message + '</span>'; }
+                    };
+                    document.getElementById('uploadBtn').onclick = async () => {
+                        const file = document.getElementById('fileInput').files[0];
+                        if (!file) return;
+                        const fd = new FormData(); fd.append('file', file);
+                        try {
+                            await api('/api/v1/certificates/upload', { method: 'POST', body: fd });
+                            document.getElementById('certMsg').innerHTML = '<span class="success">Certificate uploaded.</span>';
+                            loadCerts();
+                        } catch (e) { document.getElementById('certMsg').innerHTML = '<span class="error">' + e.message + '</span>'; }
+                    };
+                }
+                loadCerts();
+            } else if (state.tab === 'alerts') {
+                container.innerHTML = `
+                    <div class="card">
+                        <h3>Alert History</h3>
+                        <div id="alertTable"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Expiring Soon</h3>
+                        <div id="expiringTable"></div>
+                    </div>
+                `;
+                loadAlerts();
+                loadExpiring();
+            } else if (state.tab === 'settings') {
+                container.innerHTML = `
+                    <div class="card">
+                        <h3>Alert Threshold</h3>
+                        <div class="form-row">
+                            <label>Days before expiry:</label>
+                            <input type="number" id="thresholdInput" min="1" style="width:100px" />
+                            <button class="btn btn-primary" id="saveThreshold">Save</button>
+                        </div>
+                        <div id="settingsMsg"></div>
+                    </div>
+                `;
+                const cfg = await api('/api/v1/alerts/config');
+                document.getElementById('thresholdInput').value = cfg.defaultThresholdDays;
+                document.getElementById('saveThreshold').onclick = async () => {
+                    const days = document.getElementById('thresholdInput').value;
+                    try {
+                        await api('/api/v1/alerts/config?thresholdDays=' + days, { method: 'PUT' });
+                        document.getElementById('settingsMsg').innerHTML = '<span class="success">Saved.</span>';
+                    } catch (e) { document.getElementById('settingsMsg').innerHTML = '<span class="error">' + e.message + '</span>'; }
+                };
+            }
+        }
+
+        async function loadCerts() {
+            const certs = await api('/api/v1/certificates');
+            const el = document.getElementById('certTable');
+            if (!certs.length) { el.innerHTML = '<p>No certificates found.</p>'; return; }
+            el.innerHTML = `
+                <table>
+                    <thead>
+                        <tr><th>Subject</th><th>Issuer</th><th>Valid Until</th><th>Days Left</th><th>Source</th><th>Added By</th></tr>
+                    </thead>
+                    <tbody>
+                        ${certs.map(c => {
+                            let badge = 'badge-ok';
+                            if (c.daysUntilExpiry <= 0) badge = 'badge-expired';
+                            else if (c.daysUntilExpiry <= 30) badge = 'badge-warning';
+                            return `<tr>
+                                <td title="${c.subjectDn || ''}">${truncate(c.subjectDn, 40)}</td>
+                                <td title="${c.issuerDn || ''}">${truncate(c.issuerDn, 30)}</td>
+                                <td>${fmtDate(c.validUntil)}</td>
+                                <td><span class="badge ${badge}">${c.daysUntilExpiry}</span></td>
+                                <td>${c.sourceType}${c.sourceUrl ? ' <a href="' + c.sourceUrl + '" target="_blank">link</a>' : ''}</td>
+                                <td>${c.uploadedByUsername || ''}</td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function loadAlerts() {
+            const alerts = await api('/api/v1/alerts');
+            const el = document.getElementById('alertTable');
+            if (!alerts.length) { el.innerHTML = '<p>No alerts yet.</p>'; return; }
+            el.innerHTML = `
+                <table>
+                    <thead>
+                        <tr><th>Certificate</th><th>Alert Sent</th><th>Days Until Expiry</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                        ${alerts.map(a => `<tr>
+                            <td>${truncate(a.certificateSubject, 50)}</td>
+                            <td>${fmtDate(a.alertSentAt)}</td>
+                            <td>${a.daysUntilExpiry}</td>
+                            <td>${a.acknowledged ? 'Acknowledged' : 'Pending'}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function loadExpiring() {
+            const certs = await api('/api/v1/certificates/expiring');
+            const el = document.getElementById('expiringTable');
+            if (!certs.length) { el.innerHTML = '<p>No certificates expiring within the current threshold.</p>'; return; }
+            el.innerHTML = `
+                <table>
+                    <thead>
+                        <tr><th>Subject</th><th>Valid Until</th><th>Days Left</th></tr>
+                    </thead>
+                    <tbody>
+                        ${certs.map(c => `<tr>
+                            <td>${truncate(c.subjectDn, 50)}</td>
+                            <td>${fmtDate(c.validUntil)}</td>
+                            <td><span class="badge ${c.daysUntilExpiry <= 0 ? 'badge-expired' : 'badge-warning'}">${c.daysUntilExpiry}</span></td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function fmtDate(iso) {
+            if (!iso) return '-';
+            const d = new Date(iso);
+            return d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+        }
+        function truncate(s, n) { return s && s.length > n ? s.slice(0, n) + '...' : (s || ''); }
+
+        render();
+    </script>
+</body>
+</html>
