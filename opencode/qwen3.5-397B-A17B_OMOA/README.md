@@ -1,102 +1,26 @@
-# Certificate Manager
+# Système d'Évaluation - Projets Agentiques
 
-Certificate Management System with Flyway and OAuth2 Security.
+## Score Final : 35 / 100
 
-## Docker Development Setup
+### 1. Autonomie & Comportement de l'Agent (5 / 35)
+- **Nombre de modifications** : 0/15 — L'utilisateur a factuellement confirmé "Plus de 10" tours de correction après la première livraison. Le barème exige 0 dès que le seuil de 10 est dépassé.
+- **Lancement des sous-agents** : 5/10 — L'utilisateur a qualifié le comportement d'**"Incohérent"** (tourne en boucle, mauvais outils). Le barème attribue 5 pour cette catégorie.
+- **Gestion du contexte** : 0/10 — L'utilisateur a confirmé une **régression observée** (code fonctionnel précédemment cassé lors d'une correction). Le barème stipule 0 dès la moindre régression.
 
-### Prerequisites
+### 2. Architecture & Sécurité du Code (20 / 35)
+- **Logique Métier & Sécurité** : 0/15 — 
+  - **OAuth2 absent** : `SecurityConfig.java` configure un `formLogin()` classique (authentification par formulaire) et le `pom.xml` ne contient pas `spring-boot-starter-oauth2-client`, malgré les mentions dans le README et le POM.
+  - **Visibilité non restreinte au groupe** : Dans `CertificateService.java` lignes 324-330, `listCertificates(Long userId, Long groupId, ...)` exécute `certificateRepository.findAll(pageable)` quand `groupId` est `null`, exposant **tous les certificats** à tout utilisateur authentifié sans filtrage d'appartenance. C'est une faille majeure de fuite de données.
+  - "Presque sécurisé" n'existe pas dans le barème : une seule faille = 0.
+- **Propreté (Séparation des couches)** : 10/10 — Les controllers (`CertificateController`, `GroupController`) sont propres et délèguent aux services. Les repositories sont isolés. Aucun "God Object" flagrant ne centralise toute la logique. `CertificateService` est volumineux mais reste centré sur une responsabilité fonctionnelle unique.
+- **Robustesse & Gestion d'erreurs** : 10/10 — `GlobalRestExceptionHandler.java` capture exhaustivement les exceptions (validation, accès, certificats, erreurs génériques) et renvoie des réponses JSON structurées. Aucune stacktrace brute n'est exposée à l'utilisateur final. `CertificateParserService.java` gère les timeouts (10s), les codes HTTP d'erreur et les formats invalides avec un fallback PEM/DER.
 
-- Docker and Docker Compose installed
-- Java 17+ (for local development)
-- Maven 3.8+
+### 3. Débrouillardise sur l'Implicite (10 / 30)
+- **Extraction TLS & Fichier** : 0/10 — 
+  - Fichier : correct, via Bouncy Castle (`PEMParser`, `CertificateFactory`).
+  - URL : **fondamentalement incorrect**. `CertificateParserService.java` ligne 62-86 utilise `HttpURLConnection` pour faire un simple téléchargement HTTP GET du contenu de l'URL. Ce n'est **pas** une extraction TLS : le code ne récupère pas le certificat présenté par le serveur lors du handshake SSL/TLS (qui nécessiterait `HttpsURLConnection.getServerCertificates()`). C'est une mauvaise bibliothèque / approche pour ce cas d'usage.
+- **Mécanisme d'Alerte** : 0/10 — Le CRON est bien présent (`@Scheduled(cron = "0 0 * * * *")` dans `CertificateAlertScheduler.java`), mais le seuil configurable est **cassé** : le `@Value` référence la clé `certmanager.scheduler.alert-threshold-days` (ligne 32 du scheduler) tandis que `application.yml` définit `certmanager.scheduler.expiry.threshold-days` (ligne 69). La valeur effective est donc toujours la valeur codée en dur `30` du `@Value`. Par ailleurs, `EmailService` est annoté `@Profile("!prod")` et ne fait que des logs mock, sans implémentation réelle d'envoi d'email. Le barème exige un seuil configurable externement et un mécanisme propre ; ici la configuration est défaillante.
+- **Initiative (Tests & Setup)** : 10/10 — Le `docker-compose.yml` fournit un environnement complet (PostgreSQL + MailHog + app), le `Dockerfile` est multi-stage bien construit, et le `README.md` est détaillé avec commandes, ports et troubleshooting. Le critère accepte le Docker DB comme justifiant le 10 même en l'absence de tests (qui sont ici absents : `src/test` est vide).
 
-### Quick Start with Docker
-
-**Start all services:**
-```bash
-docker-compose up -d
-```
-
-This starts:
-- **PostgreSQL** on port `5432`
-- **MailHog** SMTP on port `1025`, UI on port `8025`
-- **Application** on port `8080`
-
-**View logs:**
-```bash
-docker-compose logs -f app
-```
-
-**Stop all services:**
-```bash
-docker-compose down
-```
-
-**Stop and remove volumes (clean slate):**
-```bash
-docker-compose down -v
-```
-
-### Accessing Services
-
-| Service    | URL/Port              | Credentials                    |
-|------------|-----------------------|--------------------------------|
-| App        | http://localhost:8080 | OAuth2 (configured provider)   |
-| PostgreSQL | localhost:5432        | certmanager / certmanager      |
-| MailHog UI | http://localhost:8025 | No auth required               |
-
-### Building the Docker Image
-
-**Build from scratch:**
-```bash
-docker-compose build --no-cache
-```
-
-**Build only the app:**
-```bash
-docker-compose build app
-```
-
-### Local Development (Without Docker)
-
-**Run with PostgreSQL profile:**
-```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
-```
-
-**Run tests:**
-```bash
-./mvnw clean test
-```
-
-### Environment Variables
-
-The Docker setup uses these environment variables:
-
-| Variable                      | Value                              |
-|-------------------------------|------------------------------------|
-| SPRING_PROFILES_ACTIVE        | docker                             |
-| SPRING_DATASOURCE_URL         | jdbc:postgresql://postgres:5432/certmanager |
-| SPRING_DATASOURCE_USERNAME    | certmanager                        |
-| SPRING_DATASOURCE_PASSWORD    | certmanager                        |
-| SPRING_MAIL_HOST              | mailhog                            |
-| SPRING_MAIL_PORT              | 1025                               |
-
-### Troubleshooting
-
-**Database connection issues:**
-```bash
-# Check PostgreSQL health
-docker-compose ps postgres
-
-# View PostgreSQL logs
-docker-compose logs postgres
-```
-
-**Reset database:**
-```bash
-docker-compose down -v
-docker-compose up -d postgres
-# Wait for DB to be ready, then start app
-docker-compose up -d app
-```
+### Synthèse
+Le projet affiche une structure technique honorable sur le papier (séparation des couches, gestion d'erreurs globale, Docker complet), mais il est gravement pénalisé par un comportement agentique chaotique (plus de 10 itérations, régressions, outils mal utilisés) et par des failles fonctionnelles majeures. La sécurité est branlante : pas d'OAuth2 réel, et surtout une fuite massive de données sur les certificats via `listCertificates`. L'extraction TLS via URL est conceptuellement fausse (simple download HTTP au lieu de handshake SSL). Pour atteindre le maximum, il aurait fallu livrer en one-shot sans régression, implémenter un vrai OAuth2, sécuriser le listing des certificats par appartenance utilisateur, et utiliser `HttpsURLConnection` pour récupérer le certificat serveur.
