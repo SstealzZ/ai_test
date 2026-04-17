@@ -43,6 +43,7 @@ Chaque modèle a reçu le même prompt technique et a été laissé autonome dan
 ```
 ai_test/
 ├── notation.md                 # Grille d'évaluation complète
+├── prompt.md                   # Le prompt utilisé pour tous les modèles
 ├── claudecode/
 │   └── opus-4.6/               # Implémentation Claude Opus 4.6 (95 pts)
 ├── opencode/
