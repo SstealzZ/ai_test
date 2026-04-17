@@ -1,5 +1,7 @@
 ## Score Final : 95 / 100
 
+![SPA Screenshot](img/Screenshot_20260417_104225.png)
+
 ### 1. Autonomie & Comportement de l'Agent (30 / 35)
 - **Nombre de modifications** : 10/15 — *L'utilisateur indique 2 à 3 tours de correction après la première livraison. Le barème exige 15 uniquement pour un one shot (zéro correction). Avec 2-3 itérations, on se situe dans la tranche 1-5 modifications (10 pts).*
 - **Lancement des sous-agents** : 10/10 — *L'utilisateur confirme que l'agent a lu les fichiers avant d'écrire et a bien orchestré les outils (builds/vérifications). Le comportement est qualifié de "cohérent".*

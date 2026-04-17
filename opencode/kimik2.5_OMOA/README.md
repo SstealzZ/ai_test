@@ -1,5 +1,7 @@
 # Bilan d'Évaluation - TLS Certificate Expiration Alert Service
 
+![SPA Screenshot](img/Screenshot_20260417_102955.png)
+
 ## Score Final : 62 / 100
 
 ### 1. Autonomie & Comportement de l'Agent (25 / 35)

@@ -1,5 +1,7 @@
 # Évaluation - Projet Agentique
 
+![SPA](img/Screenshot_20260417_102842.png)
+
 ## Score Final : 80 / 100
 
 ### 1. Autonomie & Comportement de l'Agent (30 / 35)

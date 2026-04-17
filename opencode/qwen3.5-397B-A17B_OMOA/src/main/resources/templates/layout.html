@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:fragment="html(title, content)">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${pageTitle} ?: 'TLS Certificate Monitor'">TLS Certificate Monitor</title>
+    <title th:replace="${title}">TLS Certificate Monitor</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -841,7 +842,7 @@
 
         <ul class="navbar-nav">
             <li class="nav-item">
-                <a href="/dashboard" class="nav-link" th:classappend="${#httpServletRequest.requestURI == '/dashboard'} ? 'active'">
+                <a href="/dashboard" class="nav-link" th:classappend="${#request.requestURI == '/dashboard'} ? 'active'">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="3" y="3" width="7" height="7" rx="1"/>
                         <rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -852,7 +853,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="/certificates" class="nav-link" th:classappend="${#httpServletRequest.requestURI.startsWith('/certificates')} ? 'active'">
+                <a href="/certificates" class="nav-link" th:classappend="${#request.requestURI.startsWith('/certificates')} ? 'active'">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M9 12l2 2 4-4"/>
                         <circle cx="12" cy="12" r="9"/>
@@ -861,7 +862,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="/alerts" class="nav-link" th:classappend="${#httpServletRequest.requestURI.startsWith('/alerts')} ? 'active'">
+                <a href="/alerts" class="nav-link" th:classappend="${#request.requestURI.startsWith('/alerts')} ? 'active'">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                         <path d="M13.73 21a2 2 0 01-3.46 0"/>
@@ -870,7 +871,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="/groups" class="nav-link" th:classappend="${#httpServletRequest.requestURI.startsWith('/groups')} ? 'active'">
+                <a href="/groups" class="nav-link" th:classappend="${#request.requestURI.startsWith('/groups')} ? 'active'">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
                         <circle cx="9" cy="7" r="4"/>
